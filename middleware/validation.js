@@ -35,6 +35,10 @@ const validateRegister = [
     .optional()
     .isMobilePhone()
     .withMessage('Please provide a valid phone number'),
+  body('profilePicture')
+    .optional()
+    .isURL()
+    .withMessage('Profile picture must be a valid URL'),
   handleValidationErrors
 ];
 

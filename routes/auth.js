@@ -14,13 +14,11 @@ const {
 const {
   generateAccessToken,
   generateRefreshToken,
-  generateEmailVerificationToken,
   generatePasswordResetToken,
   verifyToken
 } = require('../utils/jwt');
 const {
   sendOTPEmail,
-  sendEmailVerification,
   sendPasswordResetEmail
 } = require('../utils/email');
 
@@ -29,7 +27,7 @@ const {
 // @access  Public
 router.post('/register', validateRegister, async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, password, phone, profilePicture } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -45,23 +43,12 @@ router.post('/register', validateRegister, async (req, res) => {
       name,
       email,
       password,
-      phone
+      phone,
+      profilePicture: profilePicture || null,
+      isEmailVerified: true // Immediately verified
     });
 
     await user.save();
-
-    // Generate tokens
-    const accessToken = generateAccessToken(user._id);
-    const refreshToken = generateRefreshToken(user._id);
-    const emailVerificationToken = generateEmailVerificationToken(user._id);
-
-    // Send verification email
-    try {
-      await sendEmailVerification(email, emailVerificationToken, name);
-    } catch (emailError) {
-      console.error('Failed to send verification email:', emailError);
-      // Continue without email verification for now
-    }
 
     // Remove password from response
     const userResponse = user.toObject();
@@ -69,11 +56,9 @@ router.post('/register', validateRegister, async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully. Please check your email for verification.',
+      message: 'User registered successfully. Please log in to get access tokens.',
       data: {
-        user: userResponse,
-        accessToken,
-        refreshToken
+        user: userResponse
       }
     });
   } catch (error) {
@@ -425,102 +410,23 @@ router.post('/reset-password', validateNewPassword, async (req, res) => {
 });
 
 // @route   POST /api/auth/verify-email
-// @desc    Verify email address
+// @desc    Verify email address (Deprecated - emails are auto-verified)
 // @access  Public
 router.post('/verify-email', async (req, res) => {
-  try {
-    const { token } = req.body;
-
-    if (!token) {
-      return res.status(400).json({
-        success: false,
-        message: 'Verification token is required'
-      });
-    }
-
-    // Verify token
-    const decoded = verifyToken(token);
-    
-    if (decoded.type !== 'email-verification') {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid verification token'
-      });
-    }
-
-    // Find and update user
-    const user = await User.findById(decoded.userId);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    if (user.isEmailVerified) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email is already verified'
-      });
-    }
-
-    user.isEmailVerified = true;
-    user.emailVerificationToken = undefined;
-    user.emailVerificationExpires = undefined;
-    await user.save();
-
-    res.json({
-      success: true,
-      message: 'Email verified successfully'
-    });
-  } catch (error) {
-    console.error('Email verification error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error verifying email'
-    });
-  }
+  res.status(400).json({
+    success: false,
+    message: 'Email verification is not required. All emails are automatically verified.'
+  });
 });
 
 // @route   POST /api/auth/resend-verification
-// @desc    Resend email verification
+// @desc    Resend email verification (Deprecated - emails are auto-verified)
 // @access  Private
 router.post('/resend-verification', protect, async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id);
-
-    if (user.isEmailVerified) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email is already verified'
-      });
-    }
-
-    // Generate new verification token
-    const emailVerificationToken = generateEmailVerificationToken(user._id);
-
-    // Send verification email
-    try {
-      await sendEmailVerification(user.email, emailVerificationToken, user.name);
-    } catch (emailError) {
-      console.error('Failed to send verification email:', emailError);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to send verification email'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Verification email sent successfully'
-    });
-  } catch (error) {
-    console.error('Resend verification error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error sending verification email'
-    });
-  }
+  res.status(400).json({
+    success: false,
+    message: 'Email verification is not required. All emails are automatically verified.'
+  });
 });
 
 // @route   POST /api/auth/logout

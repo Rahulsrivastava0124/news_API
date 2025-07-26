@@ -1,13 +1,13 @@
 # News API with Authentication
 
-A comprehensive REST API for news management with JWT-based authentication, email verification, and password management features.
+A comprehensive REST API for news management with JWT-based authentication and password management features.
 
 ## Features
 
 - 🔐 **JWT Authentication** - Secure token-based authentication
-- 📧 **Email Verification** - Email verification with nodemailer
 - 🔒 **Password Management** - Forgot password with OTP verification
 - 👤 **User Management** - Complete user profile management
+- 🖼️ **Profile Picture** - Upload profile photo during registration
 - 🛡️ **Security** - Input validation, password hashing, and security headers
 - 📝 **Documentation** - Comprehensive API documentation
 
@@ -16,7 +16,7 @@ A comprehensive REST API for news management with JWT-based authentication, emai
 - **Backend**: Node.js, Express.js
 - **Database**: MongoDB with Mongoose
 - **Authentication**: JWT (JSON Web Tokens)
-- **Email**: Nodemailer
+- **Email**: Nodemailer (for password reset only)
 - **Validation**: Express-validator
 - **Security**: bcryptjs, helmet, cors
 
@@ -45,7 +45,7 @@ A comprehensive REST API for news management with JWT-based authentication, emai
    JWT_EXPIRES_IN=7d
    JWT_REFRESH_EXPIRES_IN=30d
    
-   # Email Configuration (Gmail)
+   # Email Configuration (Gmail) - Only for password reset
    EMAIL_SERVICE=gmail
    EMAIL_USER=your-email@gmail.com
    EMAIL_PASSWORD=your-app-password
@@ -54,7 +54,8 @@ A comprehensive REST API for news management with JWT-based authentication, emai
    FRONTEND_URL=http://localhost:3000
    ```
 
-4. **Email Setup (Gmail)**
+4. **Email Setup (Gmail) - Optional**
+   - Only needed if you want password reset functionality
    - Enable 2-factor authentication on your Gmail account
    - Generate an App Password
    - Use the App Password in `EMAIL_PASSWORD`
@@ -88,7 +89,8 @@ POST /auth/register
   "name": "John Doe",
   "email": "john@example.com",
   "password": "Password123",
-  "phone": "+1234567890"
+  "phone": "+1234567890",
+  "profilePicture": "https://example.com/photo.jpg"
 }
 ```
 
@@ -96,20 +98,21 @@ POST /auth/register
 ```json
 {
   "success": true,
-  "message": "User registered successfully. Please check your email for verification.",
+  "message": "User registered successfully. Please log in to get access tokens.",
   "data": {
     "user": {
       "_id": "user_id",
       "name": "John Doe",
       "email": "john@example.com",
-      "isEmailVerified": false,
+      "isEmailVerified": true,
+      "profilePicture": "https://example.com/photo.jpg",
       "createdAt": "2024-01-01T00:00:00.000Z"
-    },
-    "accessToken": "jwt_token",
-    "refreshToken": "refresh_token"
+    }
   }
 }
 ```
+
+**Note:** After registration, users need to log in separately to get access and refresh tokens.
 
 #### 2. Login User
 ```http
@@ -248,25 +251,7 @@ POST /auth/reset-password
 }
 ```
 
-#### 9. Verify Email
-```http
-POST /auth/verify-email
-```
-
-**Request Body:**
-```json
-{
-  "token": "email_verification_token"
-}
-```
-
-#### 10. Resend Email Verification
-```http
-POST /auth/resend-verification
-Authorization: Bearer <access_token>
-```
-
-#### 11. Refresh Token
+#### 9. Refresh Token
 ```http
 POST /auth/refresh-token
 ```
@@ -288,7 +273,7 @@ POST /auth/refresh-token
 }
 ```
 
-#### 12. Logout
+#### 10. Logout
 ```http
 POST /auth/logout
 Authorization: Bearer <access_token>
@@ -323,8 +308,7 @@ Authorization: Bearer <your_jwt_token>
 
 1. **Access Token**: Used for API authentication (expires in 7 days)
 2. **Refresh Token**: Used to get new access tokens (expires in 30 days)
-3. **Email Verification Token**: Used for email verification (expires in 1 hour)
-4. **Password Reset Token**: Used for password reset (expires in 1 hour)
+3. **Password Reset Token**: Used for password reset (expires in 1 hour)
 
 ## Security Features
 
@@ -333,20 +317,18 @@ Authorization: Bearer <your_jwt_token>
 - **Input Validation**: All inputs are validated using express-validator
 - **Security Headers**: Helmet.js provides security headers
 - **CORS**: Cross-origin resource sharing is configured
-- **Rate Limiting**: Built-in protection against brute force attacks
 
 ## Email Features
 
 ### Email Templates
 
 The API includes beautiful HTML email templates for:
-- Email verification
 - Password reset OTP
 - Password reset confirmation
 
 ### Email Configuration
 
-Configure your email settings in `config.env`:
+Configure your email settings in `config.env` (only needed for password reset):
 ```env
 EMAIL_SERVICE=gmail
 EMAIL_USER=your-email@gmail.com
@@ -377,6 +359,7 @@ The API returns consistent error responses:
 - Email: Valid email format, unique
 - Password: Minimum 6 characters, must contain uppercase, lowercase, and number
 - Phone: Optional, valid phone number format
+- Profile Picture: Optional, valid URL format
 
 ### Password Requirements
 - Minimum 6 characters
@@ -394,7 +377,7 @@ The API returns consistent error responses:
   password: String (required, hashed),
   profilePicture: String (optional),
   phone: String (optional),
-  isEmailVerified: Boolean (default: false),
+  isEmailVerified: Boolean (default: true),
   emailVerificationToken: String,
   emailVerificationExpires: Date,
   resetPasswordToken: String,
@@ -419,7 +402,8 @@ news_API/
 ├── models/
 │   └── User.js
 ├── routes/
-│   └── auth.js
+│   ├── auth.js
+│   └── news.js
 ├── middleware/
 │   ├── auth.js
 │   └── validation.js
@@ -468,4 +452,4 @@ This project is licensed under the ISC License.
 
 ## Support
 
-For support and questions, please open an issue in the repository. 
+For support and questions, please open an issue in the repository.
