@@ -68,26 +68,6 @@ const validateUpdateProfile = [
   handleValidationErrors
 ];
 
-// Change password validation
-const validateChangePassword = [
-  body('currentPassword')
-    .notEmpty()
-    .withMessage('Current password is required'),
-  body('newPassword')
-    .isLength({ min: 6 })
-    .withMessage('New password must be at least 6 characters long')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-    .withMessage('New password must contain at least one uppercase letter, one lowercase letter, and one number'),
-  body('confirmPassword')
-    .custom((value, { req }) => {
-      if (value !== req.body.newPassword) {
-        throw new Error('Password confirmation does not match password');
-      }
-      return true;
-    }),
-  handleValidationErrors
-];
-
 // Reset password validation
 const validateResetPassword = [
   body('email')
@@ -97,8 +77,8 @@ const validateResetPassword = [
   handleValidationErrors
 ];
 
-// Verify OTP validation
-const validateVerifyOTP = [
+// Verify OTP with new password validation
+const validateVerifyOTPWithPassword = [
   body('email')
     .isEmail()
     .normalizeEmail()
@@ -107,6 +87,11 @@ const validateVerifyOTP = [
     .isLength({ min: 6, max: 6 })
     .isNumeric()
     .withMessage('OTP must be a 6-digit number'),
+  body('newPassword')
+    .isLength({ min: 6 })
+    .withMessage('New password must be at least 6 characters long')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+    .withMessage('New password must contain at least one uppercase letter, one lowercase letter, and one number'),
   handleValidationErrors
 ];
 
@@ -131,9 +116,8 @@ module.exports = {
   validateRegister,
   validateLogin,
   validateUpdateProfile,
-  validateChangePassword,
   validateResetPassword,
-  validateVerifyOTP,
+  validateVerifyOTPWithPassword,
   validateNewPassword,
   handleValidationErrors
 }; 

@@ -186,22 +186,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-#### 5. Change Password
-```http
-POST /auth/change-password
-Authorization: Bearer <access_token>
-```
-
-**Request Body:**
-```json
-{
-  "currentPassword": "Password123",
-  "newPassword": "NewPassword123",
-  "confirmPassword": "NewPassword123"
-}
-```
-
-#### 6. Forgot Password (Send OTP)
+#### 5. Forgot Password (Send OTP)
 ```http
 POST /auth/forgot-password
 ```
@@ -213,7 +198,15 @@ POST /auth/forgot-password
 }
 ```
 
-#### 7. Verify OTP
+**Response:**
+```json
+{
+  "success": true,
+  "message": "OTP sent to your email address"
+}
+```
+
+#### 6. Verify OTP and Reset Password
 ```http
 POST /auth/verify-otp
 ```
@@ -222,7 +215,8 @@ POST /auth/verify-otp
 ```json
 {
   "email": "john@example.com",
-  "otp": "123456"
+  "otp": "123456",
+  "newPassword": "NewPassword123"
 }
 ```
 
@@ -230,28 +224,11 @@ POST /auth/verify-otp
 ```json
 {
   "success": true,
-  "message": "OTP verified successfully",
-  "data": {
-    "resetToken": "reset_token"
-  }
+  "message": "Password reset successfully"
 }
 ```
 
-#### 8. Reset Password
-```http
-POST /auth/reset-password
-```
-
-**Request Body:**
-```json
-{
-  "resetToken": "reset_token",
-  "password": "NewPassword123",
-  "confirmPassword": "NewPassword123"
-}
-```
-
-#### 9. Refresh Token
+#### 7. Refresh Token
 ```http
 POST /auth/refresh-token
 ```
@@ -273,7 +250,7 @@ POST /auth/refresh-token
 }
 ```
 
-#### 10. Logout
+#### 8. Logout
 ```http
 POST /auth/logout
 Authorization: Bearer <access_token>

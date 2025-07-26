@@ -6,9 +6,8 @@ const {
   validateRegister,
   validateLogin,
   validateUpdateProfile,
-  validateChangePassword,
   validateResetPassword,
-  validateVerifyOTP,
+  validateVerifyOTPWithPassword,
   validateNewPassword
 } = require('../middleware/validation');
 const {
@@ -236,42 +235,6 @@ router.put('/profile', protect, validateUpdateProfile, async (req, res) => {
   }
 });
 
-// @route   POST /api/auth/change-password
-// @desc    Change password
-// @access  Private
-router.post('/change-password', protect, validateChangePassword, async (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
-
-    // Get user with password
-    const user = await User.findById(req.user._id).select('+password');
-
-    // Verify current password
-    const isCurrentPasswordValid = await user.comparePassword(currentPassword);
-    if (!isCurrentPasswordValid) {
-      return res.status(400).json({
-        success: false,
-        message: 'Current password is incorrect'
-      });
-    }
-
-    // Update password
-    user.password = newPassword;
-    await user.save();
-
-    res.json({
-      success: true,
-      message: 'Password changed successfully'
-    });
-  } catch (error) {
-    console.error('Change password error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error changing password'
-    });
-  }
-});
-
 // @route   POST /api/auth/forgot-password
 // @desc    Send password reset email with OTP
 // @access  Public
@@ -316,11 +279,11 @@ router.post('/forgot-password', validateResetPassword, async (req, res) => {
 });
 
 // @route   POST /api/auth/verify-otp
-// @desc    Verify OTP for password reset
+// @desc    Verify OTP and update password
 // @access  Public
-router.post('/verify-otp', validateVerifyOTP, async (req, res) => {
+router.post('/verify-otp', validateVerifyOTPWithPassword, async (req, res) => {
   try {
-    const { email, otp } = req.body;
+    const { email, otp, newPassword } = req.body;
 
     const user = await User.findOne({ email });
     if (!user) {
@@ -339,60 +302,8 @@ router.post('/verify-otp', validateVerifyOTP, async (req, res) => {
       });
     }
 
-    // Generate password reset token
-    const resetToken = generatePasswordResetToken(user._id);
-
-    res.json({
-      success: true,
-      message: 'OTP verified successfully',
-      data: {
-        resetToken
-      }
-    });
-  } catch (error) {
-    console.error('Verify OTP error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error verifying OTP'
-    });
-  }
-});
-
-// @route   POST /api/auth/reset-password
-// @desc    Reset password using token
-// @access  Public
-router.post('/reset-password', validateNewPassword, async (req, res) => {
-  try {
-    const { resetToken, password } = req.body;
-
-    if (!resetToken) {
-      return res.status(400).json({
-        success: false,
-        message: 'Reset token is required'
-      });
-    }
-
-    // Verify reset token
-    const decoded = verifyToken(resetToken);
-    
-    if (decoded.type !== 'password-reset') {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid reset token'
-      });
-    }
-
-    // Find user
-    const user = await User.findById(decoded.userId);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
     // Update password
-    user.password = password;
+    user.password = newPassword;
     user.clearOTP(); // Clear OTP after successful reset
     await user.save();
 
@@ -401,12 +312,22 @@ router.post('/reset-password', validateNewPassword, async (req, res) => {
       message: 'Password reset successfully'
     });
   } catch (error) {
-    console.error('Reset password error:', error);
+    console.error('Verify OTP error:', error);
     res.status(500).json({
       success: false,
       message: 'Error resetting password'
     });
   }
+});
+
+// @route   POST /api/auth/reset-password
+// @desc    Reset password using token (Deprecated - use verify-otp instead)
+// @access  Public
+router.post('/reset-password', async (req, res) => {
+  res.status(400).json({
+    success: false,
+    message: 'This endpoint is deprecated. Use /verify-otp with newPassword to reset password.'
+  });
 });
 
 // @route   POST /api/auth/verify-email
