@@ -43,7 +43,6 @@ A comprehensive REST API for news management with JWT-based authentication and p
    # JWT Configuration
    JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
    JWT_EXPIRES_IN=7d
-   JWT_REFRESH_EXPIRES_IN=30d
    
    # Email Configuration (Gmail) - Only for password reset
    EMAIL_SERVICE=gmail
@@ -112,7 +111,7 @@ POST /auth/register
 }
 ```
 
-**Note:** After registration, users need to log in separately to get access and refresh tokens.
+**Note:** After registration, users need to log in separately to get an access token.
 
 #### 2. Login User
 ```http
@@ -140,8 +139,7 @@ POST /auth/login
       "isEmailVerified": true,
       "lastLogin": "2024-01-01T00:00:00.000Z"
     },
-    "accessToken": "jwt_token",
-    "refreshToken": "refresh_token"
+    "accessToken": "jwt_token"
   }
 }
 ```
@@ -228,28 +226,6 @@ POST /auth/verify-otp
 }
 ```
 
-#### 7. Refresh Token
-```http
-POST /auth/refresh-token
-```
-
-**Request Body:**
-```json
-{
-  "refreshToken": "refresh_token"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "accessToken": "new_access_token"
-  }
-}
-```
-
 #### 8. Logout
 ```http
 POST /auth/logout
@@ -284,7 +260,6 @@ Authorization: Bearer <your_jwt_token>
 ### Token Types
 
 1. **Access Token**: Used for API authentication (expires in 7 days)
-2. **Refresh Token**: Used to get new access tokens (expires in 30 days)
 3. **Password Reset Token**: Used for password reset (expires in 1 hour)
 
 ## Security Features
@@ -409,7 +384,6 @@ npm test           # Run tests (not implemented yet)
 | `NODE_ENV` | Environment mode | development |
 | `JWT_SECRET` | JWT signing secret | your-secret-key-change-in-production |
 | `JWT_EXPIRES_IN` | Access token expiry | 7d |
-| `JWT_REFRESH_EXPIRES_IN` | Refresh token expiry | 30d |
 | `EMAIL_SERVICE` | Email service provider | gmail |
 | `EMAIL_USER` | Email username | - |
 | `EMAIL_PASSWORD` | Email password/app password | - |
