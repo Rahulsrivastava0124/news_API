@@ -273,6 +273,226 @@ const validateUpdateCategory = [
   handleValidationErrors,
 ];
 
+// Create blog validation
+const validateCreateBlog = [
+  body("category")
+    .isMongoId()
+    .withMessage("Category must be a valid category ID"),
+  body("title")
+    .trim()
+    .isLength({ min: 5, max: 200 })
+    .withMessage("Title must be between 5 and 200 characters"),
+  body("subtitle")
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage("Subtitle cannot exceed 500 characters"),
+  body("htmlData")
+    .trim()
+    .isLength({ min: 10 })
+    .withMessage("HTML content must be at least 10 characters"),
+  body("publishDate")
+    .optional()
+    .isISO8601()
+    .withMessage("Publish date must be a valid date"),
+  body("tags").optional().isArray().withMessage("Tags must be an array"),
+  body("tags.*")
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 50 })
+    .withMessage("Each tag must be between 1 and 50 characters"),
+  body("featuredImage")
+    .optional()
+    .isURL()
+    .withMessage("Featured image must be a valid URL"),
+  body("isPublished")
+    .optional()
+    .isBoolean()
+    .withMessage("isPublished must be a boolean"),
+  body("readTime")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage("Read time must be a positive integer"),
+  handleValidationErrors,
+];
+
+// Update blog validation
+const validateUpdateBlog = [
+  body("category")
+    .optional()
+    .isMongoId()
+    .withMessage("Category must be a valid category ID"),
+  body("title")
+    .optional()
+    .trim()
+    .isLength({ min: 5, max: 200 })
+    .withMessage("Title must be between 5 and 200 characters"),
+  body("subtitle")
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage("Subtitle cannot exceed 500 characters"),
+  body("htmlData")
+    .optional()
+    .trim()
+    .isLength({ min: 10 })
+    .withMessage("HTML content must be at least 10 characters"),
+  body("publishDate")
+    .optional()
+    .isISO8601()
+    .withMessage("Publish date must be a valid date"),
+  body("tags").optional().isArray().withMessage("Tags must be an array"),
+  body("tags.*")
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 50 })
+    .withMessage("Each tag must be between 1 and 50 characters"),
+  body("featuredImage")
+    .optional()
+    .isURL()
+    .withMessage("Featured image must be a valid URL"),
+  body("isPublished")
+    .optional()
+    .isBoolean()
+    .withMessage("isPublished must be a boolean"),
+  body("readTime")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage("Read time must be a positive integer"),
+  handleValidationErrors,
+];
+
+// Create article validation
+const validateCreateArticle = [
+  body("category")
+    .isMongoId()
+    .withMessage("Category must be a valid category ID"),
+  body("title")
+    .trim()
+    .isLength({ min: 5, max: 200 })
+    .withMessage("Title must be between 5 and 200 characters"),
+  body("subtitle")
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage("Subtitle cannot exceed 500 characters"),
+  body("htmlData")
+    .trim()
+    .isLength({ min: 10 })
+    .withMessage("HTML content must be at least 10 characters"),
+  body("publishDate")
+    .optional()
+    .isISO8601()
+    .withMessage("Publish date must be a valid date"),
+  body("tags").optional().isArray().withMessage("Tags must be an array"),
+  body("tags.*")
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 50 })
+    .withMessage("Each tag must be between 1 and 50 characters"),
+  body("featuredImage")
+    .optional()
+    .isURL()
+    .withMessage("Featured image must be a valid URL"),
+  body("isPublished")
+    .optional()
+    .isBoolean()
+    .withMessage("isPublished must be a boolean"),
+  body("readTime")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage("Read time must be a positive integer"),
+  body("references").optional().isArray().withMessage("References must be an array"),
+  body("references.*.title")
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 200 })
+    .withMessage("Reference title must be between 1 and 200 characters"),
+  body("references.*.url")
+    .optional()
+    .isURL()
+    .withMessage("Reference URL must be a valid URL"),
+  body("seoKeywords").optional().isArray().withMessage("SEO keywords must be an array"),
+  body("seoKeywords.*")
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 50 })
+    .withMessage("Each SEO keyword must be between 1 and 50 characters"),
+  body("seoDescription")
+    .optional()
+    .trim()
+    .isLength({ max: 160 })
+    .withMessage("SEO description cannot exceed 160 characters"),
+  handleValidationErrors,
+];
+
+// Update article validation
+const validateUpdateArticle = [
+  body("category")
+    .optional()
+    .isMongoId()
+    .withMessage("Category must be a valid category ID"),
+  body("title")
+    .optional()
+    .trim()
+    .isLength({ min: 5, max: 200 })
+    .withMessage("Title must be between 5 and 200 characters"),
+  body("subtitle")
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage("Subtitle cannot exceed 500 characters"),
+  body("htmlData")
+    .optional()
+    .trim()
+    .isLength({ min: 10 })
+    .withMessage("HTML content must be at least 10 characters"),
+  body("publishDate")
+    .optional()
+    .isISO8601()
+    .withMessage("Publish date must be a valid date"),
+  body("tags").optional().isArray().withMessage("Tags must be an array"),
+  body("tags.*")
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 50 })
+    .withMessage("Each tag must be between 1 and 50 characters"),
+  body("featuredImage")
+    .optional()
+    .isURL()
+    .withMessage("Featured image must be a valid URL"),
+  body("isPublished")
+    .optional()
+    .isBoolean()
+    .withMessage("isPublished must be a boolean"),
+  body("readTime")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage("Read time must be a positive integer"),
+  body("references").optional().isArray().withMessage("References must be an array"),
+  body("references.*.title")
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 200 })
+    .withMessage("Reference title must be between 1 and 200 characters"),
+  body("references.*.url")
+    .optional()
+    .isURL()
+    .withMessage("Reference URL must be a valid URL"),
+  body("seoKeywords").optional().isArray().withMessage("SEO keywords must be an array"),
+  body("seoKeywords.*")
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 50 })
+    .withMessage("Each SEO keyword must be between 1 and 50 characters"),
+  body("seoDescription")
+    .optional()
+    .trim()
+    .isLength({ max: 160 })
+    .withMessage("SEO description cannot exceed 160 characters"),
+  handleValidationErrors,
+];
+
 module.exports = {
   validateRegister,
   validateLogin,
@@ -284,5 +504,9 @@ module.exports = {
   validateUpdateNews,
   validateCreateCategory,
   validateUpdateCategory,
+  validateCreateBlog,
+  validateUpdateBlog,
+  validateCreateArticle,
+  validateUpdateArticle,
   handleValidationErrors,
 };
