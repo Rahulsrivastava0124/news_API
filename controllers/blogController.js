@@ -1,6 +1,26 @@
 const Blog = require("../models/Blog");
 const User = require("../models/User");
 
+// @desc    Get total count of blogs
+// @access  Public
+const getBlogsCount = async (req, res) => {
+  try {
+    const count = await Blog.countDocuments({});
+    res.json({
+      success: true,
+      message: "Total blogs count retrieved successfully",
+      count,
+    });
+  } catch (error) {
+    console.error("Get blogs count error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching blogs count",
+      error: error.message,
+    });
+  }
+};
+
 // @desc    Get all blogs with optional filtering
 // @access  Public
 const getAllBlogs = async (req, res) => {
@@ -465,4 +485,5 @@ module.exports = {
   deleteBlog,
   toggleLikeBlog,
   addComment,
+  getBlogsCount,
 }; 

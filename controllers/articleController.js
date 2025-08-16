@@ -1,6 +1,26 @@
 const Article = require("../models/Article");
 const User = require("../models/User");
 
+// @desc    Get total count of articles
+// @access  Public
+const getArticlesCount = async (req, res) => {
+  try {
+    const count = await Article.countDocuments({});
+    res.json({
+      success: true,
+      message: "Total articles count retrieved successfully",
+      count,
+    });
+  } catch (error) {
+    console.error("Get articles count error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching articles count",
+      error: error.message,
+    });
+  }
+};
+
 // @desc    Get all articles with optional filtering
 // @access  Public
 const getAllArticles = async (req, res) => {
@@ -513,4 +533,5 @@ module.exports = {
   toggleLikeArticle,
   shareArticle,
   addComment,
+  getArticlesCount,
 }; 

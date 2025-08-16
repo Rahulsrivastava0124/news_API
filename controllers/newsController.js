@@ -1,6 +1,26 @@
 const News = require("../models/News");
 const User = require("../models/User");
 
+// @desc    Get total count of news
+// @access  Public
+const getNewsCount = async (req, res) => {
+  try {
+    const count = await News.countDocuments({});
+    res.json({
+      success: true,
+      message: "Total news count retrieved successfully",
+      count,
+    });
+  } catch (error) {
+    console.error("Get news count error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching news count",
+      error: error.message,
+    });
+  }
+};
+
 // @desc    Get all news with optional filtering
 // @access  Public
 const getAllNews = async (req, res) => {
@@ -367,4 +387,5 @@ module.exports = {
   createNews,
   updateNews,
   deleteNews,
+  getNewsCount,
 };

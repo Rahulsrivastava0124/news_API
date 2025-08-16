@@ -14,12 +14,18 @@ const {
   deleteBlog,
   toggleLikeBlog,
   addComment,
+  getBlogsCount,
 } = require("../controllers/blogController");
 
 // @route   GET /api/blog
 // @desc    Get all blogs (with optional filtering)
 // @access  Public
 router.get("/", getAllBlogs);
+
+// @route   GET /api/blog/count
+// @desc    Get total count of blogs
+// @access  Public
+router.get("/count", getBlogsCount);
 
 // @route   GET /api/blog/short
 // @desc    Get blogs in short format (titles and brief content)

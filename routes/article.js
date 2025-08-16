@@ -15,12 +15,18 @@ const {
   toggleLikeArticle,
   shareArticle,
   addComment,
+  getArticlesCount,
 } = require("../controllers/articleController");
 
 // @route   GET /api/article
 // @desc    Get all articles (with optional filtering)
 // @access  Public
 router.get("/", getAllArticles);
+
+// @route   GET /api/article/count
+// @desc    Get total count of articles
+// @access  Public
+router.get("/count", getArticlesCount);
 
 // @route   GET /api/article/short
 // @desc    Get articles in short format (titles and brief content)
