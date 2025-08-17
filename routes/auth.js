@@ -16,7 +16,9 @@ const {
   updateProfile,
   forgotPassword,
   verifyOTP,
-  logout
+  logout,
+  getAllUsers,
+  getStatistics
 } = require('../controllers/authController');
 
 // @route   POST /api/auth/register
@@ -56,5 +58,15 @@ router.post('/verify-otp', validateVerifyOTPWithPassword, verifyOTP);
 // @desc    Logout user (client should remove tokens)
 // @access  Private
 router.post('/logout', protect, logout);
+
+// @route   GET /api/auth/users
+// @desc    Get all users (Admin only)
+// @access  Private (Admin)
+router.get('/users', protect, getAllUsers);
+
+// @route   GET /api/auth/count
+// @desc    Get content and user statistics (Admin only)
+// @access  Private (Admin)
+router.get('/count', protect, getStatistics);
 
 module.exports = router; 

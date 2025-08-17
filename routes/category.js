@@ -13,12 +13,18 @@ const {
   updateCategory,
   deleteCategory,
   getNewsByCategory,
+  getCategoriesCount,
 } = require("../controllers/categoryController");
 
 // @route   GET /api/categories
 // @desc    Get all categories
 // @access  Public
 router.get("/", getAllCategories);
+
+// @route   GET /api/categories/count
+// @desc    Get total count of categories
+// @access  Public
+router.get("/count", getCategoriesCount);
 
 // @route   GET /api/categories/:id
 // @desc    Get category by ID

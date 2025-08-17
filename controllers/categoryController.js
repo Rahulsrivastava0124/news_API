@@ -1,6 +1,25 @@
 const Category = require("../models/Category");
 const News = require("../models/News");
 
+// @desc    Get total count of categories
+// @access  Public
+const getCategoriesCount = async (req, res) => {
+  try {
+    const count = await Category.countDocuments({});
+    res.json({
+      success: true,
+      message: "Total categories count retrieved successfully",
+      count,
+    });
+  } catch (error) {
+    console.error("Get categories count error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching categories count",
+      error: error.message,
+    });
+  }
+};
 // @desc    Get all categories
 // @access  Public
 const getAllCategories = async (req, res) => {
@@ -394,4 +413,5 @@ module.exports = {
   updateCategory,
   deleteCategory,
   getNewsByCategory,
+  getCategoriesCount,
 };

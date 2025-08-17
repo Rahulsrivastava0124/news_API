@@ -270,6 +270,160 @@ const logout = async (req, res) => {
   }
 };
 
+// @desc    Get all users (Admin only)
+// @access  Private (Admin)
+const getAllUsers = async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin privileges required.'
+      });
+    }
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Build query
+    const query = {};
+    
+    // Search by name or email
+    if (req.query.search) {
+      query.$or = [
+        { name: { $regex: req.query.search, $options: 'i' } },
+        { email: { $regex: req.query.search, $options: 'i' } }
+      ];
+    }
+
+    // Filter by role
+    if (req.query.role) {
+      query.role = req.query.role;
+    }
+
+    // Filter by status
+    if (req.query.isActive !== undefined) {
+      query.isActive = req.query.isActive === 'true';
+    }
+
+    // Get total count
+    const totalUsers = await User.countDocuments(query);
+    const totalPages = Math.ceil(totalUsers / limit);
+
+    // Get users with pagination
+    const users = await User.find(query)
+      .select('-password -otp -emailVerificationToken -resetPasswordToken')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    res.json({
+      success: true,
+      data: {
+        users,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalUsers,
+          hasNextPage: page < totalPages,
+          hasPrevPage: page > 1
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get all users error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching users'
+    });
+  }
+};
+
+// @desc    Get content and user statistics
+// @access  Private (Admin)
+const getStatistics = async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin privileges required.'
+      });
+    }
+
+    const News = require('../models/News');
+    const Blog = require('../models/Blog');
+    const Article = require('../models/Article');
+
+    // Get counts
+    const [
+      totalUsers,
+      publishedNews,
+      publishedBlogs,
+      publishedArticles,
+      totalNews,
+      totalBlogs,
+      totalArticles
+    ] = await Promise.all([
+      User.countDocuments(),
+      News.countDocuments({ isPublished: true }),
+      Blog.countDocuments({ isPublished: true }),
+      Article.countDocuments({ isPublished: true }),
+      News.countDocuments(),
+      Blog.countDocuments(),
+      Article.countDocuments()
+    ]);
+
+    // Get recent activity (last 7 days)
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    
+    const [
+      recentUsers,
+      recentNews,
+      recentBlogs,
+      recentArticles
+    ] = await Promise.all([
+      User.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
+      News.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
+      Blog.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
+      Article.countDocuments({ createdAt: { $gte: sevenDaysAgo } })
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        overview: {
+          totalUsers,
+          publishedNews,
+          publishedBlogs,
+          publishedArticles,
+          totalNews,
+          totalBlogs,
+          totalArticles
+        },
+        recentActivity: {
+          newUsers: recentUsers,
+          newNews: recentNews,
+          newBlogs: recentBlogs,
+          newArticles: recentArticles
+        },
+        percentages: {
+          newsPublished: totalNews > 0 ? Math.round((publishedNews / totalNews) * 100) : 0,
+          blogsPublished: totalBlogs > 0 ? Math.round((publishedBlogs / totalBlogs) * 100) : 0,
+          articlesPublished: totalArticles > 0 ? Math.round((publishedArticles / totalArticles) * 100) : 0
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get statistics error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching statistics'
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -277,5 +431,7 @@ module.exports = {
   updateProfile,
   forgotPassword,
   verifyOTP,
-  logout
+  logout,
+  getAllUsers,
+  getStatistics
 }; 

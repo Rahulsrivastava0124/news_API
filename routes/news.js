@@ -12,12 +12,18 @@ const {
   createNews,
   updateNews,
   deleteNews,
+  getNewsCount,
 } = require("../controllers/newsController");
 
 // @route   GET /api/news
 // @desc    Get all news (with optional filtering)
 // @access  Public
 router.get("/", getAllNews);
+
+// @route   GET /api/news/count
+// @desc    Get total count of news
+// @access  Public
+router.get("/count", getNewsCount);
 
 // @route   GET /api/news/short
 // @desc    Get news in short format (titles and brief content)

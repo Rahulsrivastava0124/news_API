@@ -48,6 +48,14 @@ const categorySchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    blogCount: {
+      type: Number,
+      default: 0,
+    },
+    articleCount: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,
@@ -85,6 +93,22 @@ categorySchema.statics.updateNewsCount = async function (categoryId) {
   const News = require("./News");
   const count = await News.countDocuments({ category: categoryId });
   await this.findByIdAndUpdate(categoryId, { newsCount: count });
+  return count;
+};
+
+// Static method to update blog count
+categorySchema.statics.updateBlogCount = async function (categoryId) {
+  const Blog = require("./Blog");
+  const count = await Blog.countDocuments({ category: categoryId });
+  await this.findByIdAndUpdate(categoryId, { blogCount: count });
+  return count;
+};
+
+// Static method to update article count
+categorySchema.statics.updateArticleCount = async function (categoryId) {
+  const Article = require("./Article");
+  const count = await Article.countDocuments({ category: categoryId });
+  await this.findByIdAndUpdate(categoryId, { articleCount: count });
   return count;
 };
 

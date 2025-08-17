@@ -1,29 +1,29 @@
-const News = require("../models/News");
+const Blog = require("../models/Blog");
 const User = require("../models/User");
 
-// @desc    Get total count of news
+// @desc    Get total count of blogs
 // @access  Public
-const getNewsCount = async (req, res) => {
+const getBlogsCount = async (req, res) => {
   try {
-    const count = await News.countDocuments({});
+    const count = await Blog.countDocuments({});
     res.json({
       success: true,
-      message: "Total news count retrieved successfully",
+      message: "Total blogs count retrieved successfully",
       count,
     });
   } catch (error) {
-    console.error("Get news count error:", error);
+    console.error("Get blogs count error:", error);
     res.status(500).json({
       success: false,
-      message: "Error fetching news count",
+      message: "Error fetching blogs count",
       error: error.message,
     });
   }
 };
 
-// @desc    Get all news with optional filtering
+// @desc    Get all blogs with optional filtering
 // @access  Public
-const getAllNews = async (req, res) => {
+const getAllBlogs = async (req, res) => {
   try {
     const {
       category,
@@ -38,7 +38,7 @@ const getAllNews = async (req, res) => {
     // Build filter object
     const filter = {};
 
-    // Add published filter if specified, otherwise show all news
+    // Add published filter if specified, otherwise show all blogs
     if (published !== undefined) {
       filter.isPublished = published === "true";
     }
@@ -56,7 +56,7 @@ const getAllNews = async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     // Execute query with population
-    const news = await News.find(filter)
+    const blogs = await Blog.find(filter)
       .populate("author", "name email profilePicture")
       .populate("category", "name slug color icon")
       .sort(sort)
@@ -65,12 +65,12 @@ const getAllNews = async (req, res) => {
       .select("-htmlData"); // Exclude full HTML content for list view
 
     // Get total count for pagination
-    const total = await News.countDocuments(filter);
+    const total = await Blog.countDocuments(filter);
 
     res.json({
       success: true,
-      message: "News retrieved successfully",
-      data: news,
+      message: "Blogs retrieved successfully",
+      data: blogs,
       pagination: {
         currentPage: parseInt(page),
         totalPages: Math.ceil(total / parseInt(limit)),
@@ -79,18 +79,18 @@ const getAllNews = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Get news error:", error);
+    console.error("Get blogs error:", error);
     res.status(500).json({
       success: false,
-      message: "Error fetching news",
+      message: "Error fetching blogs",
       error: error.message,
     });
   }
 };
 
-// @desc    Get news in short format (for viewInshort)
+// @desc    Get blogs in short format (for viewInshort)
 // @access  Public
-const getNewsInShort = async (req, res) => {
+const getBlogsInShort = async (req, res) => {
   try {
     const {
       category,
@@ -104,7 +104,7 @@ const getNewsInShort = async (req, res) => {
     // Build filter object
     const filter = {};
 
-    // Add published filter if specified, otherwise show all news
+    // Add published filter if specified, otherwise show all blogs
     if (published !== undefined) {
       filter.isPublished = published === "true";
     }
@@ -119,22 +119,22 @@ const getNewsInShort = async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     // Execute query with minimal population for brief view
-    const news = await News.find(filter)
+    const blogs = await Blog.find(filter)
       .populate("author", "name")
       .populate("category", "name")
       .sort(sort)
       .skip(skip)
       .limit(parseInt(limit))
       .select(
-        "title subtitle category publishDate author views featuredImage htmlData"
+        "title subtitle category publishDate author views featuredImage htmlData readTime likes"
       );
 
     // Transform data to brief format
-    const briefNews = news.map((article) => {
+    const briefBlogs = blogs.map((blog) => {
       // Create brief content from HTML data (first 150 characters without HTML tags)
       let briefContent = "";
-      if (article.htmlData) {
-        const textContent = article.htmlData.replace(/<[^>]*>/g, "");
+      if (blog.htmlData) {
+        const textContent = blog.htmlData.replace(/<[^>]*>/g, "");
         briefContent =
           textContent.length > 150
             ? textContent.substring(0, 150) + "..."
@@ -142,27 +142,29 @@ const getNewsInShort = async (req, res) => {
       }
 
       return {
-        _id: article._id,
-        title: article.title,
-        subtitle: article.subtitle,
+        _id: blog._id,
+        title: blog.title,
+        subtitle: blog.subtitle,
         briefContent: briefContent,
-        category: article.category,
-        author: article.author,
-        publishDate: article.publishDate,
-        views: article.views,
-        featuredImage: article.featuredImage,
-        createdAt: article.createdAt,
-        updatedAt: article.updatedAt,
+        category: blog.category,
+        author: blog.author,
+        publishDate: blog.publishDate,
+        views: blog.views,
+        featuredImage: blog.featuredImage,
+        readTime: blog.readTime,
+        likes: blog.likes,
+        createdAt: blog.createdAt,
+        updatedAt: blog.updatedAt,
       };
     });
 
     // Get total count for pagination
-    const total = await News.countDocuments(filter);
+    const total = await Blog.countDocuments(filter);
 
     res.json({
       success: true,
-      message: "News in short format retrieved successfully",
-      data: briefNews,
+      message: "Blogs in short format retrieved successfully",
+      data: briefBlogs,
       pagination: {
         currentPage: parseInt(page),
         totalPages: Math.ceil(total / parseInt(limit)),
@@ -171,54 +173,54 @@ const getNewsInShort = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Get news in short error:", error);
+    console.error("Get blogs in short error:", error);
     res.status(500).json({
       success: false,
-      message: "Error fetching news in short format",
+      message: "Error fetching blogs in short format",
       error: error.message,
     });
   }
 };
 
-// @desc    Get news by ID (view)
+// @desc    Get blog by ID (view)
 // @access  Public
-const getNewsById = async (req, res) => {
+const getBlogById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const news = await News.findById(id)
+    const blog = await Blog.findById(id)
       .populate("author", "name email profilePicture")
       .populate("category", "name slug color icon description");
 
-    if (!news) {
+    if (!blog) {
       return res.status(404).json({
         success: false,
-        message: "News article not found",
+        message: "Blog post not found",
       });
     }
 
     // Increment view count
-    news.views += 1;
-    await news.save();
+    blog.views += 1;
+    await blog.save();
 
     res.json({
       success: true,
-      message: "News retrieved successfully",
-      data: news,
+      message: "Blog retrieved successfully",
+      data: blog,
     });
   } catch (error) {
-    console.error("Get news by ID error:", error);
+    console.error("Get blog by ID error:", error);
     res.status(500).json({
       success: false,
-      message: "Error fetching news",
+      message: "Error fetching blog",
       error: error.message,
     });
   }
 };
 
-// @desc    Create news article
+// @desc    Create blog post
 // @access  Private
-const createNews = async (req, res) => {
+const createBlog = async (req, res) => {
   try {
     const {
       category,
@@ -229,6 +231,7 @@ const createNews = async (req, res) => {
       tags,
       featuredImage,
       isPublished = false,
+      readTime,
     } = req.body;
 
     // Validate required fields
@@ -239,8 +242,8 @@ const createNews = async (req, res) => {
       });
     }
 
-    // Create news article
-    const news = new News({
+    // Create blog post
+    const blog = new Blog({
       category,
       title,
       subtitle,
@@ -250,32 +253,33 @@ const createNews = async (req, res) => {
       tags: tags || [],
       featuredImage,
       isPublished,
+      readTime: readTime || 0,
     });
 
-    await news.save();
+    await blog.save();
 
     // Populate author and category details
-    await news.populate("author", "name email profilePicture");
-    await news.populate("category", "name slug color icon");
+    await blog.populate("author", "name email profilePicture");
+    await blog.populate("category", "name slug color icon");
 
     res.status(201).json({
       success: true,
-      message: "News article created successfully",
-      data: news,
+      message: "Blog post created successfully",
+      data: blog,
     });
   } catch (error) {
-    console.error("Create news error:", error);
+    console.error("Create blog error:", error);
     res.status(500).json({
       success: false,
-      message: "Error creating news article",
+      message: "Error creating blog post",
       error: error.message,
     });
   }
 };
 
-// @desc    Update news article (edit)
+// @desc    Update blog post (edit)
 // @access  Private
-const updateNews = async (req, res) => {
+const updateBlog = async (req, res) => {
   try {
     const { id } = req.params;
     const {
@@ -287,23 +291,24 @@ const updateNews = async (req, res) => {
       tags,
       featuredImage,
       isPublished,
+      readTime,
     } = req.body;
 
-    // Find the news article
-    const news = await News.findById(id);
+    // Find the blog post
+    const blog = await Blog.findById(id);
 
-    if (!news) {
+    if (!blog) {
       return res.status(404).json({
         success: false,
-        message: "News article not found",
+        message: "Blog post not found",
       });
     }
 
     // Check if user is the author or admin
-    if (news.author.toString() !== req.user.id && req.user.role !== "admin") {
+    if (blog.author.toString() !== req.user.id && req.user.role !== "admin") {
       return res.status(403).json({
         success: false,
-        message: "Not authorized to update this news article",
+        message: "Not authorized to update this blog post",
       });
     }
 
@@ -317,8 +322,9 @@ const updateNews = async (req, res) => {
     if (tags !== undefined) updateData.tags = tags;
     if (featuredImage !== undefined) updateData.featuredImage = featuredImage;
     if (isPublished !== undefined) updateData.isPublished = isPublished;
+    if (readTime !== undefined) updateData.readTime = readTime;
 
-    const updatedNews = await News.findByIdAndUpdate(id, updateData, {
+    const updatedBlog = await Blog.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
     })
@@ -327,65 +333,157 @@ const updateNews = async (req, res) => {
 
     res.json({
       success: true,
-      message: "News article updated successfully",
-      data: updatedNews,
+      message: "Blog post updated successfully",
+      data: updatedBlog,
     });
   } catch (error) {
-    console.error("Update news error:", error);
+    console.error("Update blog error:", error);
     res.status(500).json({
       success: false,
-      message: "Error updating news article",
+      message: "Error updating blog post",
       error: error.message,
     });
   }
 };
 
-// @desc    Delete news article
+// @desc    Delete blog post
 // @access  Private
-const deleteNews = async (req, res) => {
+const deleteBlog = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Find the news article
-    const news = await News.findById(id);
+    // Find the blog post
+    const blog = await Blog.findById(id);
 
-    if (!news) {
+    if (!blog) {
       return res.status(404).json({
         success: false,
-        message: "News article not found",
+        message: "Blog post not found",
       });
     }
 
     // Check if user is the author or admin
-    if (news.author.toString() !== req.user.id && req.user.role !== "admin") {
+    if (blog.author.toString() !== req.user.id && req.user.role !== "admin") {
       return res.status(403).json({
         success: false,
-        message: "Not authorized to delete this news article",
+        message: "Not authorized to delete this blog post",
       });
     }
 
-    await News.findByIdAndDelete(id);
+    await Blog.findByIdAndDelete(id);
 
     res.json({
       success: true,
-      message: "News article deleted successfully",
+      message: "Blog post deleted successfully",
     });
   } catch (error) {
-    console.error("Delete news error:", error);
+    console.error("Delete blog error:", error);
     res.status(500).json({
       success: false,
-      message: "Error deleting news article",
+      message: "Error deleting blog post",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Like/Unlike blog post
+// @access  Private
+const toggleLikeBlog = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const blog = await Blog.findById(id);
+
+    if (!blog) {
+      return res.status(404).json({
+        success: false,
+        message: "Blog post not found",
+      });
+    }
+
+    // Check if user already liked the blog
+    const hasLiked = blog.likes > 0; // Simple implementation - you might want to track individual likes
+
+    if (hasLiked) {
+      blog.likes = Math.max(0, blog.likes - 1);
+    } else {
+      blog.likes += 1;
+    }
+
+    await blog.save();
+
+    res.json({
+      success: true,
+      message: hasLiked ? "Blog unliked successfully" : "Blog liked successfully",
+      data: { likes: blog.likes },
+    });
+  } catch (error) {
+    console.error("Toggle like blog error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error toggling like",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Add comment to blog post
+// @access  Private
+const addComment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { content } = req.body;
+
+    if (!content) {
+      return res.status(400).json({
+        success: false,
+        message: "Comment content is required",
+      });
+    }
+
+    const blog = await Blog.findById(id);
+
+    if (!blog) {
+      return res.status(404).json({
+        success: false,
+        message: "Blog post not found",
+      });
+    }
+
+    blog.comments.push({
+      user: req.user.id,
+      content,
+    });
+
+    await blog.save();
+
+    // Populate the new comment with user details
+    await blog.populate("comments.user", "name email profilePicture");
+
+    res.json({
+      success: true,
+      message: "Comment added successfully",
+      data: blog.comments[blog.comments.length - 1],
+    });
+  } catch (error) {
+    console.error("Add comment error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error adding comment",
       error: error.message,
     });
   }
 };
 
 module.exports = {
-  getAllNews,
-  getNewsById,
-  getNewsInShort,
-  createNews,
-  updateNews,
-  deleteNews,
-  getNewsCount,
-};
+  getAllBlogs,
+  getBlogById,
+  getBlogsInShort,
+  createBlog,
+  updateBlog,
+  deleteBlog,
+  toggleLikeBlog,
+  addComment,
+  getBlogsCount,
+}; 
