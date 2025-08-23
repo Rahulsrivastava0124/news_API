@@ -1,5 +1,6 @@
 const Article = require("../models/Article");
 const User = require("../models/User");
+const BlobHandler = require("../utils/blobHandler");
 
 // @desc    Get total count of articles
 // @access  Public
@@ -230,7 +231,6 @@ const createArticle = async (req, res) => {
       htmlData,
       publishDate,
       tags,
-      featuredImage,
       isPublished = false,
       readTime,
       references,
@@ -246,6 +246,62 @@ const createArticle = async (req, res) => {
       });
     }
 
+    // Handle featured image upload
+    let featuredImageData = null;
+    
+    // Check if image is uploaded as file
+    if (req.file) {
+      // Validate file
+      BlobHandler.validateFileSize(req.file, 10 * 1024 * 1024); // 10MB limit
+      BlobHandler.validateFileType(req.file, ['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+
+      // Convert to blob data
+      const blobData = BlobHandler.fileToBlob(req.file);
+      featuredImageData = {
+        data: blobData.data,
+        contentType: blobData.contentType,
+        originalName: blobData.originalName,
+        size: blobData.size,
+        uploadedAt: blobData.uploadedAt
+      };
+    }
+    // Check if featuredImage is provided in request body
+    else if (req.body.featuredImage) {
+      const { featuredImage } = req.body;
+      
+      // Handle different formats of featuredImage
+      if (featuredImage.data) {
+        // If it's already in blob format
+        featuredImageData = {
+          data: Buffer.from(featuredImage.data, 'base64'),
+          contentType: featuredImage.contentType || 'image/jpeg',
+          originalName: featuredImage.originalName || 'image.jpg',
+          size: featuredImage.size || 0,
+          uploadedAt: featuredImage.uploadedAt || new Date()
+        };
+      } else if (featuredImage.objectURL) {
+        // If it's a blob URL, we'll need to handle this on frontend
+        // For now, we'll store the URL as a string
+        featuredImageData = {
+          data: null,
+          contentType: 'application/octet-stream',
+          originalName: 'blob-url',
+          size: 0,
+          uploadedAt: new Date(),
+          objectURL: featuredImage.objectURL
+        };
+      } else if (typeof featuredImage === 'string') {
+        // If it's a base64 string
+        featuredImageData = {
+          data: Buffer.from(featuredImage, 'base64'),
+          contentType: 'image/jpeg',
+          originalName: 'image.jpg',
+          size: Buffer.from(featuredImage, 'base64').length,
+          uploadedAt: new Date()
+        };
+      }
+    }
+
     // Create article
     const article = new Article({
       category,
@@ -255,7 +311,7 @@ const createArticle = async (req, res) => {
       htmlData,
       publishDate: publishDate ? new Date(publishDate) : new Date(),
       tags: tags || [],
-      featuredImage,
+      featuredImage: featuredImageData,
       isPublished,
       readTime: readTime || 0,
       references: references || [],
@@ -269,10 +325,20 @@ const createArticle = async (req, res) => {
     await article.populate("author", "name email profilePicture");
     await article.populate("category", "name slug color icon");
 
+    // Convert featured image to base64 for response
+    const responseData = {
+      ...article.toObject(),
+      featuredImage: article.featuredImage && article.featuredImage.data ? {
+        ...article.featuredImage,
+        data: article.featuredImage.data.toString('base64'),
+        url: `/api/articles/${article._id}/featured-image`
+      } : null
+    };
+
     res.status(201).json({
       success: true,
       message: "Article created successfully",
-      data: article,
+      data: responseData,
     });
   } catch (error) {
     console.error("Create article error:", error);
@@ -296,7 +362,6 @@ const updateArticle = async (req, res) => {
       htmlData,
       publishDate,
       tags,
-      featuredImage,
       isPublished,
       readTime,
       references,
@@ -322,6 +387,62 @@ const updateArticle = async (req, res) => {
       });
     }
 
+    // Handle featured image upload
+    let featuredImageData = article.featuredImage; // Keep existing if no new upload
+    
+    // Check if image is uploaded as file
+    if (req.file) {
+      // Validate file
+      BlobHandler.validateFileSize(req.file, 10 * 1024 * 1024); // 10MB limit
+      BlobHandler.validateFileType(req.file, ['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+
+      // Convert to blob data
+      const blobData = BlobHandler.fileToBlob(req.file);
+      featuredImageData = {
+        data: blobData.data,
+        contentType: blobData.contentType,
+        originalName: blobData.originalName,
+        size: blobData.size,
+        uploadedAt: blobData.uploadedAt
+      };
+    }
+    // Check if featuredImage is provided in request body
+    else if (req.body.featuredImage) {
+      const { featuredImage } = req.body;
+      
+      // Handle different formats of featuredImage
+      if (featuredImage.data) {
+        // If it's already in blob format
+        featuredImageData = {
+          data: Buffer.from(featuredImage.data, 'base64'),
+          contentType: featuredImage.contentType || 'image/jpeg',
+          originalName: featuredImage.originalName || 'image.jpg',
+          size: featuredImage.size || 0,
+          uploadedAt: featuredImage.uploadedAt || new Date()
+        };
+      } else if (featuredImage.objectURL) {
+        // If it's a blob URL, we'll need to handle this on frontend
+        // For now, we'll store the URL as a string
+        featuredImageData = {
+          data: null,
+          contentType: 'application/octet-stream',
+          originalName: 'blob-url',
+          size: 0,
+          uploadedAt: new Date(),
+          objectURL: featuredImage.objectURL
+        };
+      } else if (typeof featuredImage === 'string') {
+        // If it's a base64 string
+        featuredImageData = {
+          data: Buffer.from(featuredImage, 'base64'),
+          contentType: 'image/jpeg',
+          originalName: 'image.jpg',
+          size: Buffer.from(featuredImage, 'base64').length,
+          uploadedAt: new Date()
+        };
+      }
+    }
+
     // Update fields
     const updateData = {};
     if (category) updateData.category = category;
@@ -330,7 +451,7 @@ const updateArticle = async (req, res) => {
     if (htmlData) updateData.htmlData = htmlData;
     if (publishDate) updateData.publishDate = new Date(publishDate);
     if (tags !== undefined) updateData.tags = tags;
-    if (featuredImage !== undefined) updateData.featuredImage = featuredImage;
+    if (featuredImageData) updateData.featuredImage = featuredImageData;
     if (isPublished !== undefined) updateData.isPublished = isPublished;
     if (readTime !== undefined) updateData.readTime = readTime;
     if (references !== undefined) updateData.references = references;
@@ -344,10 +465,20 @@ const updateArticle = async (req, res) => {
       .populate("author", "name email profilePicture")
       .populate("category", "name slug color icon");
 
+    // Convert featured image to base64 for response
+    const responseData = {
+      ...updatedArticle.toObject(),
+      featuredImage: updatedArticle.featuredImage && updatedArticle.featuredImage.data ? {
+        ...updatedArticle.featuredImage,
+        data: updatedArticle.featuredImage.data.toString('base64'),
+        url: `/api/articles/${updatedArticle._id}/featured-image`
+      } : null
+    };
+
     res.json({
       success: true,
       message: "Article updated successfully",
-      data: updatedArticle,
+      data: responseData,
     });
   } catch (error) {
     console.error("Update article error:", error);
@@ -523,6 +654,40 @@ const addComment = async (req, res) => {
   }
 };
 
+// @desc    Get article featured image
+// @access  Public
+const getArticleFeaturedImage = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const article = await Article.findById(id).select('featuredImage');
+    
+    if (!article || !article.featuredImage || !article.featuredImage.data) {
+      return res.status(404).json({
+        success: false,
+        message: 'Featured image not found'
+      });
+    }
+
+    // Set appropriate headers
+    res.set({
+      'Content-Type': article.featuredImage.contentType,
+      'Content-Disposition': `inline; filename="${article.featuredImage.originalName}"`,
+      'Content-Length': article.featuredImage.size
+    });
+
+    // Send the blob data
+    res.send(article.featuredImage.data);
+  } catch (error) {
+    console.error('Get article featured image error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error retrieving featured image',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllArticles,
   getArticleById,
@@ -534,4 +699,5 @@ module.exports = {
   shareArticle,
   addComment,
   getArticlesCount,
+  getArticleFeaturedImage,
 }; 

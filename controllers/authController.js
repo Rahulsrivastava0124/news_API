@@ -8,12 +8,13 @@ const {
   sendOTPEmail,
   sendPasswordResetEmail
 } = require('../utils/email');
+const BlobHandler = require('../utils/blobHandler');
 
 // @desc    Register a new user
 // @access  Public
 const register = async (req, res) => {
   try {
-    const { name, email, password, phone, profilePicture } = req.body;
+    const { name, email, password, phone } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -24,20 +25,83 @@ const register = async (req, res) => {
       });
     }
 
+    // Handle profile picture upload
+    let profilePictureData = null;
+    
+    // Check if image is uploaded as file
+    if (req.file) {
+      // Validate file
+      BlobHandler.validateFileSize(req.file, 5 * 1024 * 1024); // 5MB limit for profile pics
+      BlobHandler.validateFileType(req.file, ['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+
+      // Convert to blob data
+      const blobData = BlobHandler.fileToBlob(req.file);
+      profilePictureData = {
+        data: blobData.data,
+        contentType: blobData.contentType,
+        originalName: blobData.originalName,
+        size: blobData.size,
+        uploadedAt: blobData.uploadedAt
+      };
+    }
+    // Check if profilePicture is provided in request body
+    else if (req.body.profilePicture) {
+      const { profilePicture } = req.body;
+      
+      // Handle different formats of profilePicture
+      if (profilePicture.data) {
+        // If it's already in blob format
+        profilePictureData = {
+          data: Buffer.from(profilePicture.data, 'base64'),
+          contentType: profilePicture.contentType || 'image/jpeg',
+          originalName: profilePicture.originalName || 'profile.jpg',
+          size: profilePicture.size || 0,
+          uploadedAt: profilePicture.uploadedAt || new Date()
+        };
+      } else if (profilePicture.objectURL) {
+        // If it's a blob URL, we'll need to handle this on frontend
+        // For now, we'll store the URL as a string
+        profilePictureData = {
+          data: null,
+          contentType: 'application/octet-stream',
+          originalName: 'blob-url',
+          size: 0,
+          uploadedAt: new Date(),
+          objectURL: profilePicture.objectURL
+        };
+      } else if (typeof profilePicture === 'string') {
+        // If it's a base64 string
+        profilePictureData = {
+          data: Buffer.from(profilePicture, 'base64'),
+          contentType: 'image/jpeg',
+          originalName: 'profile.jpg',
+          size: Buffer.from(profilePicture, 'base64').length,
+          uploadedAt: new Date()
+        };
+      }
+    }
+
     // Create new user
     const user = new User({
       name,
       email,
       password,
       phone,
-      profilePicture: profilePicture || null,
+      profilePicture: profilePictureData,
       isEmailVerified: true // Immediately verified
     });
 
     await user.save();
 
-    // Remove password from response
-    const userResponse = user.toObject();
+    // Remove password from response and convert profile picture to base64
+    const userResponse = {
+      ...user.toObject(),
+      profilePicture: user.profilePicture && user.profilePicture.data ? {
+        ...user.profilePicture,
+        data: user.profilePicture.data.toString('base64'),
+        url: `/api/auth/users/${user._id}/profile-picture`
+      } : null
+    };
     delete userResponse.password;
 
     res.status(201).json({
@@ -424,6 +488,145 @@ const getStatistics = async (req, res) => {
   }
 };
 
+// @desc    Update profile picture
+// @access  Private
+const updateProfilePicture = async (req, res) => {
+  try {
+    let profilePictureData = null;
+    
+    // Check if image is uploaded as file
+    if (req.file) {
+      // Validate file
+      BlobHandler.validateFileSize(req.file, 5 * 1024 * 1024); // 5MB limit for profile pics
+      BlobHandler.validateFileType(req.file, ['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+
+      // Convert to blob data
+      const blobData = BlobHandler.fileToBlob(req.file);
+      profilePictureData = {
+        data: blobData.data,
+        contentType: blobData.contentType,
+        originalName: blobData.originalName,
+        size: blobData.size,
+        uploadedAt: blobData.uploadedAt
+      };
+    }
+    // Check if profilePicture is provided in request body
+    else if (req.body.profilePicture) {
+      const { profilePicture } = req.body;
+      
+      // Handle different formats of profilePicture
+      if (profilePicture.data) {
+        // If it's already in blob format
+        profilePictureData = {
+          data: Buffer.from(profilePicture.data, 'base64'),
+          contentType: profilePicture.contentType || 'image/jpeg',
+          originalName: profilePicture.originalName || 'profile.jpg',
+          size: profilePicture.size || 0,
+          uploadedAt: profilePicture.uploadedAt || new Date()
+        };
+      } else if (profilePicture.objectURL) {
+        // If it's a blob URL, we'll need to handle this on frontend
+        // For now, we'll store the URL as a string
+        profilePictureData = {
+          data: null,
+          contentType: 'application/octet-stream',
+          originalName: 'blob-url',
+          size: 0,
+          uploadedAt: new Date(),
+          objectURL: profilePicture.objectURL
+        };
+      } else if (typeof profilePicture === 'string') {
+        // If it's a base64 string
+        profilePictureData = {
+          data: Buffer.from(profilePicture, 'base64'),
+          contentType: 'image/jpeg',
+          originalName: 'profile.jpg',
+          size: Buffer.from(profilePicture, 'base64').length,
+          uploadedAt: new Date()
+        };
+      }
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'No image uploaded or provided in request body'
+      });
+    }
+
+    // Update user profile picture
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      {
+        profilePicture: profilePictureData
+      },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Return response with base64 image data
+    const responseData = {
+      ...user.toObject(),
+      profilePicture: user.profilePicture ? {
+        ...user.profilePicture,
+        data: user.profilePicture.data ? user.profilePicture.data.toString('base64') : null,
+        url: `/api/auth/users/${user._id}/profile-picture`
+      } : null
+    };
+
+    res.json({
+      success: true,
+      message: 'Profile picture updated successfully',
+      data: responseData
+    });
+  } catch (error) {
+    console.error('Update profile picture error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating profile picture',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Get user profile picture
+// @access  Public
+const getProfilePicture = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId).select('profilePicture');
+    
+    if (!user || !user.profilePicture || !user.profilePicture.data) {
+      return res.status(404).json({
+        success: false,
+        message: 'Profile picture not found'
+      });
+    }
+
+    // Set appropriate headers
+    res.set({
+      'Content-Type': user.profilePicture.contentType,
+      'Content-Disposition': `inline; filename="${user.profilePicture.originalName}"`,
+      'Content-Length': user.profilePicture.size
+    });
+
+    // Send the blob data
+    res.send(user.profilePicture.data);
+  } catch (error) {
+    console.error('Get profile picture error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error retrieving profile picture',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -433,5 +636,7 @@ module.exports = {
   verifyOTP,
   logout,
   getAllUsers,
-  getStatistics
+  getStatistics,
+  updateProfilePicture,
+  getProfilePicture
 }; 

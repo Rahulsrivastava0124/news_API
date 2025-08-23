@@ -9,6 +9,7 @@ const {
   validateVerifyOTPWithPassword,
   validateNewPassword
 } = require('../middleware/validation');
+const { uploadSingle } = require('../middleware/upload');
 const {
   register,
   login,
@@ -18,18 +19,30 @@ const {
   verifyOTP,
   logout,
   getAllUsers,
-  getStatistics
+  getStatistics,
+  updateProfilePicture,
+  getProfilePicture
 } = require('../controllers/authController');
 
 // @route   POST /api/auth/register
 // @desc    Register a new user
 // @access  Public
-router.post('/register', validateRegister, register);
+router.post('/register', uploadSingle, validateRegister, register);
 
 // @route   POST /api/auth/login
 // @desc    Login user
 // @access  Public
 router.post('/login', validateLogin, login);
+
+// @route   PUT /api/auth/profile-picture
+// @desc    Update profile picture
+// @access  Private
+router.put('/profile-picture', protect, uploadSingle, updateProfilePicture);
+
+// @route   GET /api/auth/users/:userId/profile-picture
+// @desc    Get user profile picture
+// @access  Public
+router.get('/users/:userId/profile-picture', getProfilePicture);
 
 
 

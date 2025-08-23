@@ -23,8 +23,26 @@ const userSchema = new mongoose.Schema({
     select: false
   },
   profilePicture: {
-    type: String,
-    default: null
+    data: {
+      type: Buffer,
+      default: null
+    },
+    contentType: {
+      type: String,
+      default: null
+    },
+    originalName: {
+      type: String,
+      default: null
+    },
+    size: {
+      type: Number,
+      default: null
+    },
+    uploadedAt: {
+      type: Date,
+      default: null
+    }
   },
   phone: {
     type: String,

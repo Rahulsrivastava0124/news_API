@@ -5,6 +5,7 @@ const {
   validateCreateArticle,
   validateUpdateArticle,
 } = require("../middleware/validation");
+const { uploadSingle } = require("../middleware/upload");
 const {
   getAllArticles,
   getArticleById,
@@ -16,6 +17,7 @@ const {
   shareArticle,
   addComment,
   getArticlesCount,
+  getArticleFeaturedImage,
 } = require("../controllers/articleController");
 
 // @route   GET /api/article
@@ -41,12 +43,17 @@ router.get("/:id", getArticleById);
 // @route   POST /api/article
 // @desc    Create article
 // @access  Private
-router.post("/", protect, validateCreateArticle, createArticle);
+router.post("/", protect, uploadSingle, validateCreateArticle, createArticle);
 
 // @route   PUT /api/article/:id
 // @desc    Update article
 // @access  Private
-router.put("/:id", protect, validateUpdateArticle, updateArticle);
+router.put("/:id", protect, uploadSingle, validateUpdateArticle, updateArticle);
+
+// @route   GET /api/article/:id/featured-image
+// @desc    Get article featured image
+// @access  Public
+router.get("/:id/featured-image", getArticleFeaturedImage);
 
 // @route   DELETE /api/article/:id
 // @desc    Delete article

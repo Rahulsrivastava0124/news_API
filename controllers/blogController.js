@@ -1,5 +1,6 @@
 const Blog = require("../models/Blog");
 const User = require("../models/User");
+const BlobHandler = require("../utils/blobHandler");
 
 // @desc    Get total count of blogs
 // @access  Public
@@ -229,7 +230,6 @@ const createBlog = async (req, res) => {
       htmlData,
       publishDate,
       tags,
-      featuredImage,
       isPublished = false,
       readTime,
     } = req.body;
@@ -242,6 +242,62 @@ const createBlog = async (req, res) => {
       });
     }
 
+    // Handle featured image upload
+    let featuredImageData = null;
+    
+    // Check if image is uploaded as file
+    if (req.file) {
+      // Validate file
+      BlobHandler.validateFileSize(req.file, 10 * 1024 * 1024); // 10MB limit
+      BlobHandler.validateFileType(req.file, ['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+
+      // Convert to blob data
+      const blobData = BlobHandler.fileToBlob(req.file);
+      featuredImageData = {
+        data: blobData.data,
+        contentType: blobData.contentType,
+        originalName: blobData.originalName,
+        size: blobData.size,
+        uploadedAt: blobData.uploadedAt
+      };
+    }
+    // Check if featuredImage is provided in request body
+    else if (req.body.featuredImage) {
+      const { featuredImage } = req.body;
+      
+      // Handle different formats of featuredImage
+      if (featuredImage.data) {
+        // If it's already in blob format
+        featuredImageData = {
+          data: Buffer.from(featuredImage.data, 'base64'),
+          contentType: featuredImage.contentType || 'image/jpeg',
+          originalName: featuredImage.originalName || 'image.jpg',
+          size: featuredImage.size || 0,
+          uploadedAt: featuredImage.uploadedAt || new Date()
+        };
+      } else if (featuredImage.objectURL) {
+        // If it's a blob URL, we'll need to handle this on frontend
+        // For now, we'll store the URL as a string
+        featuredImageData = {
+          data: null,
+          contentType: 'application/octet-stream',
+          originalName: 'blob-url',
+          size: 0,
+          uploadedAt: new Date(),
+          objectURL: featuredImage.objectURL
+        };
+      } else if (typeof featuredImage === 'string') {
+        // If it's a base64 string
+        featuredImageData = {
+          data: Buffer.from(featuredImage, 'base64'),
+          contentType: 'image/jpeg',
+          originalName: 'image.jpg',
+          size: Buffer.from(featuredImage, 'base64').length,
+          uploadedAt: new Date()
+        };
+      }
+    }
+
     // Create blog post
     const blog = new Blog({
       category,
@@ -251,7 +307,7 @@ const createBlog = async (req, res) => {
       htmlData,
       publishDate: publishDate ? new Date(publishDate) : new Date(),
       tags: tags || [],
-      featuredImage,
+      featuredImage: featuredImageData,
       isPublished,
       readTime: readTime || 0,
     });
@@ -262,10 +318,20 @@ const createBlog = async (req, res) => {
     await blog.populate("author", "name email profilePicture");
     await blog.populate("category", "name slug color icon");
 
+    // Convert featured image to base64 for response
+    const responseData = {
+      ...blog.toObject(),
+      featuredImage: blog.featuredImage && blog.featuredImage.data ? {
+        ...blog.featuredImage,
+        data: blog.featuredImage.data.toString('base64'),
+        url: `/api/blog/${blog._id}/featured-image`
+      } : null
+    };
+
     res.status(201).json({
       success: true,
       message: "Blog post created successfully",
-      data: blog,
+      data: responseData,
     });
   } catch (error) {
     console.error("Create blog error:", error);
@@ -289,7 +355,6 @@ const updateBlog = async (req, res) => {
       htmlData,
       publishDate,
       tags,
-      featuredImage,
       isPublished,
       readTime,
     } = req.body;
@@ -312,6 +377,62 @@ const updateBlog = async (req, res) => {
       });
     }
 
+    // Handle featured image upload
+    let featuredImageData = blog.featuredImage; // Keep existing if no new upload
+    
+    // Check if image is uploaded as file
+    if (req.file) {
+      // Validate file
+      BlobHandler.validateFileSize(req.file, 10 * 1024 * 1024); // 10MB limit
+      BlobHandler.validateFileType(req.file, ['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+
+      // Convert to blob data
+      const blobData = BlobHandler.fileToBlob(req.file);
+      featuredImageData = {
+        data: blobData.data,
+        contentType: blobData.contentType,
+        originalName: blobData.originalName,
+        size: blobData.size,
+        uploadedAt: blobData.uploadedAt
+      };
+    }
+    // Check if featuredImage is provided in request body
+    else if (req.body.featuredImage) {
+      const { featuredImage } = req.body;
+      
+      // Handle different formats of featuredImage
+      if (featuredImage.data) {
+        // If it's already in blob format
+        featuredImageData = {
+          data: Buffer.from(featuredImage.data, 'base64'),
+          contentType: featuredImage.contentType || 'image/jpeg',
+          originalName: featuredImage.originalName || 'image.jpg',
+          size: featuredImage.size || 0,
+          uploadedAt: featuredImage.uploadedAt || new Date()
+        };
+      } else if (featuredImage.objectURL) {
+        // If it's a blob URL, we'll need to handle this on frontend
+        // For now, we'll store the URL as a string
+        featuredImageData = {
+          data: null,
+          contentType: 'application/octet-stream',
+          originalName: 'blob-url',
+          size: 0,
+          uploadedAt: new Date(),
+          objectURL: featuredImage.objectURL
+        };
+      } else if (typeof featuredImage === 'string') {
+        // If it's a base64 string
+        featuredImageData = {
+          data: Buffer.from(featuredImage, 'base64'),
+          contentType: 'image/jpeg',
+          originalName: 'image.jpg',
+          size: Buffer.from(featuredImage, 'base64').length,
+          uploadedAt: new Date()
+        };
+      }
+    }
+
     // Update fields
     const updateData = {};
     if (category) updateData.category = category;
@@ -320,7 +441,7 @@ const updateBlog = async (req, res) => {
     if (htmlData) updateData.htmlData = htmlData;
     if (publishDate) updateData.publishDate = new Date(publishDate);
     if (tags !== undefined) updateData.tags = tags;
-    if (featuredImage !== undefined) updateData.featuredImage = featuredImage;
+    if (featuredImageData) updateData.featuredImage = featuredImageData;
     if (isPublished !== undefined) updateData.isPublished = isPublished;
     if (readTime !== undefined) updateData.readTime = readTime;
 
@@ -331,10 +452,20 @@ const updateBlog = async (req, res) => {
       .populate("author", "name email profilePicture")
       .populate("category", "name slug color icon");
 
+    // Convert featured image to base64 for response
+    const responseData = {
+      ...updatedBlog.toObject(),
+      featuredImage: updatedBlog.featuredImage && updatedBlog.featuredImage.data ? {
+        ...updatedBlog.featuredImage,
+        data: updatedBlog.featuredImage.data.toString('base64'),
+        url: `/api/blog/${updatedBlog._id}/featured-image`
+      } : null
+    };
+
     res.json({
       success: true,
       message: "Blog post updated successfully",
-      data: updatedBlog,
+      data: responseData,
     });
   } catch (error) {
     console.error("Update blog error:", error);
@@ -476,6 +607,40 @@ const addComment = async (req, res) => {
   }
 };
 
+// @desc    Get blog featured image
+// @access  Public
+const getBlogFeaturedImage = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const blog = await Blog.findById(id).select('featuredImage');
+    
+    if (!blog || !blog.featuredImage || !blog.featuredImage.data) {
+      return res.status(404).json({
+        success: false,
+        message: 'Featured image not found'
+      });
+    }
+
+    // Set appropriate headers
+    res.set({
+      'Content-Type': blog.featuredImage.contentType,
+      'Content-Disposition': `inline; filename="${blog.featuredImage.originalName}"`,
+      'Content-Length': blog.featuredImage.size
+    });
+
+    // Send the blob data
+    res.send(blog.featuredImage.data);
+  } catch (error) {
+    console.error('Get blog featured image error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error retrieving featured image',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllBlogs,
   getBlogById,
@@ -486,4 +651,5 @@ module.exports = {
   toggleLikeBlog,
   addComment,
   getBlogsCount,
+  getBlogFeaturedImage,
 }; 

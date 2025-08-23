@@ -5,6 +5,7 @@ const {
   validateCreateBlog,
   validateUpdateBlog,
 } = require("../middleware/validation");
+const { uploadSingle } = require("../middleware/upload");
 const {
   getAllBlogs,
   getBlogById,
@@ -15,6 +16,7 @@ const {
   toggleLikeBlog,
   addComment,
   getBlogsCount,
+  getBlogFeaturedImage,
 } = require("../controllers/blogController");
 
 // @route   GET /api/blog
@@ -40,12 +42,17 @@ router.get("/:id", getBlogById);
 // @route   POST /api/blog
 // @desc    Create blog post
 // @access  Private
-router.post("/", protect, validateCreateBlog, createBlog);
+router.post("/", protect, uploadSingle, validateCreateBlog, createBlog);
 
 // @route   PUT /api/blog/:id
 // @desc    Update blog post
 // @access  Private
-router.put("/:id", protect, validateUpdateBlog, updateBlog);
+router.put("/:id", protect, uploadSingle, validateUpdateBlog, updateBlog);
+
+// @route   GET /api/blog/:id/featured-image
+// @desc    Get blog featured image
+// @access  Public
+router.get("/:id/featured-image", getBlogFeaturedImage);
 
 // @route   DELETE /api/blog/:id
 // @desc    Delete blog post

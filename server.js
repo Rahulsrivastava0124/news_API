@@ -53,6 +53,7 @@ const authRoutes = require("./routes/auth");
 const categoryRoutes = require("./routes/category");
 const blogRoutes = require("./routes/blog");
 const articleRoutes = require("./routes/article");
+const fileRoutes = require("./routes/files");
 
 // Use routes
 app.use("/api/news", newsRoutes);
@@ -60,6 +61,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/blog", blogRoutes);
 app.use("/api/article", articleRoutes);
+app.use("/api/files", fileRoutes);
 
 // 404 handler
 app.use("*", (req, res) => {
